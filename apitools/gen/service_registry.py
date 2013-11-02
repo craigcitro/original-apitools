@@ -142,6 +142,69 @@ class ServiceRegistry(object):
     for name, method_info_map in self.__service_method_info_map.iteritems():
       self.__WriteProtoServiceDeclaration(printer, name, method_info_map)
 
+  def __ProxyMethodName(self, service_name, method_name):
+    class_name = self.__GetServiceClassName(service_name)
+    return '%s%sHandler' % (service_name, method_name)
+
+  def __WriteProxyServiceDeclaration(self, printer, service_name,
+                                     method_info_map):
+    """Write out the handlers for a single service."""
+    for method_name in method_info_map.iterkeys():
+      printer()
+      printer('def %s(self, http_request):',
+              self.__ProxyMethodName(service_name, method_name))
+      with printer.Indent():
+        printer('import pdb;pdb.set_trace()')
+
+  def WriteProxyFile(self, out):
+    """Write a proxy server for the services in this registry."""
+    self.Validate()
+    client_info = self.__client_info
+    printer = util.SimplePrettyPrinter(out)
+    printer('"""Generated API proxy server for %s.%s."""',
+            client_info.package, client_info.version)
+    printer()
+    printer('import sys')
+    printer()
+    printer('from paste import httpserver')
+    printer()
+    # TODO(craigcitro): Switch these paths internally.
+    printer('from apitools.base.py import base_proxy')
+    printer('import %s as client_lib', self.__client_info.client_rule_name)
+    printer()
+    printer()
+    # TODO(craigcitro): move this into self.__client_info
+    proxy_class_name = '%sProxyApp' % (self.__client_info.client_class_name,)
+    printer('class %s(base_proxy.BaseApiProxyApp):', proxy_class_name)
+    with printer.Indent():
+      printer('def __init__(self):')
+      with printer.Indent():
+        printer('super(%s, self).__init__()', proxy_class_name)
+        printer('self.__client = client_lib.%s()',
+                self.__client_info.client_class_name)
+        for name, method_info_map in self.__service_method_info_map.iteritems():
+          printer()
+          printer('# Registering methods for service %s', name)
+          for method_name in method_info_map.iterkeys():
+            path = '/%s/%s' % (name, method_name)
+            proxy_method_name = self.__ProxyMethodName(name, method_name)
+            printer("self._AddRoute('%s', self.%s)", path, proxy_method_name)
+      printer()
+      for name, method_info_map in self.__service_method_info_map.iteritems():
+        self.__WriteProxyServiceDeclaration(printer, name, method_info_map)
+
+    printer()
+    printer()
+    printer('def main(unused_argv):')
+    with printer.Indent():
+      printer('app = %s().app', proxy_class_name)
+      printer("httpserver.serve(app, host='127.0.0.1', port='8080')")
+    printer()
+    printer()
+    printer("if __name__ == '__main__':")
+    with printer.Indent():
+      printer('main(sys.argv[1:])')
+
   def WriteFile(self, out):
     """Write the services in this registry to out."""
     self.Validate()

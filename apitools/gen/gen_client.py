@@ -66,6 +66,9 @@ flags.DEFINE_enum(
 flags.DEFINE_boolean(
     'experimental_proto2_output', False,
     'Dangerous: also output a proto2 message file.')
+flags.DEFINE_boolean(
+    'experimental_generate_proxy_output', False,
+    'Dangerous: generate a proxy service file.')
 
 FLAGS = flags.FLAGS
 
@@ -147,6 +150,9 @@ def _WriteGeneratedFiles(codegen):
       codegen.WriteClientLibrary(out)
     with open(codegen.client_info.cli_file_name, 'w') as out:
       codegen.WriteCli(out)
+    if FLAGS.experimental_generate_proxy_output:
+      with open(codegen.client_info.proxy_file_name, 'w') as out:
+        codegen.WriteProxyFile(out)
 
 
 def _WriteInit(codegen):

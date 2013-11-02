@@ -151,6 +151,9 @@ class DescriptorGenerator(object):
   def WriteServicesProtoFile(self, out):
     self.__services_registry.WriteProtoFile(out)
 
+  def WriteProxyFile(self, out):
+    self.__services_registry.WriteProxyFile(out)
+
   def WriteClientLibrary(self, out):
     self.__services_registry.WriteFile(out)
 

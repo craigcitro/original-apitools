@@ -199,6 +199,14 @@ class ClientInfo(collections.namedtuple('ClientInfo', (
     return '%s.py' % self.messages_rule_name
 
   @property
+  def proxy_rule_name(self):
+    return '%s_%s_proxy' % (self.package, self.version)
+
+  @property
+  def proxy_file_name(self):
+    return '%s.py' % self.proxy_rule_name
+
+  @property
   def messages_proto_file_name(self):
     return '%s.proto' % self.messages_rule_name
 
